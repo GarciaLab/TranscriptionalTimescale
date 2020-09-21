@@ -25,7 +25,7 @@ t_sim = 20*60*60; % duration of each simulation (in seconds)
 %% %%%%%%%%%%%%%%%%%% run stochastic simulation script %%%%%%%%%%%%%%%%%%%%
 p = gcp('nocreate');
 if isempty(p)
-  parpool(4);
+  p = parpool;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%
