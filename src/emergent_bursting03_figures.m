@@ -115,7 +115,7 @@ saveas(hist_fig,[FigurePath 'no-coop_hist.pdf'])
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% (b) cooperative binding 
+%% (b) cooperative binding 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % specify appropriate index
@@ -125,7 +125,7 @@ coop_sim_index = find(contains(sim_name_cell,'kon-mediated'));
 coop_plot_index = 6; 
 
 % plot results of stochastic simulations
-trace_index = 23; 
+trace_index = 3; 
 
 state_fig = figure;
 cmap2 = brewermap(9,'Set2');
@@ -147,7 +147,6 @@ set(gca,'Fontsize',14,'YTick',n_bound_vec)
 p = plot(0,0);
 StandardFigurePBoC(p,gca);
 state_fig.InvertHardcopy = 'off';
-
 
 
 
@@ -176,7 +175,7 @@ saveas(hist_fig,[FigurePath 'coop_hist.png'])
 saveas(hist_fig,[FigurePath 'coop_hist.pdf'])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% (c) rate-limiting step
+%% (c) rate-limiting step
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % specify appropriate index
