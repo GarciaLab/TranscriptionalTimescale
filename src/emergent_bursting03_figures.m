@@ -51,7 +51,7 @@ time_rs = 0:resamp_res:3600;
 trace_index = 2;
 sim_index = 1;
 
-state_fig = figure;
+trace_fig = figure;
 hold on
 % generate resampled trace (moving average, essentially)
 for i = 1%[2 1 3]%ind_plot_indices
@@ -72,7 +72,7 @@ ax = gca;
 ax.YColor = 'black';
 ax.XColor = 'black';
 StandardFigurePBoC(p,gca);
-state_fig.InvertHardcopy = 'off';
+trace_fig.InvertHardcopy = 'off';
 saveas(state_fig,[FigurePath 'no-coop_trace.png'])
 saveas(state_fig,[FigurePath 'no-coop_trace.pdf'])
 
@@ -127,7 +127,7 @@ coop_plot_index = 6;
 % plot results of stochastic simulations
 trace_index = 3; 
 
-state_fig = figure;
+trace_fig = figure;
 cmap2 = brewermap(9,'Set2');
 hold on
 % generate resampled trace (moving average, essentially)
@@ -146,7 +146,9 @@ box on
 set(gca,'Fontsize',14,'YTick',n_bound_vec)
 p = plot(0,0);
 StandardFigurePBoC(p,gca);
-state_fig.InvertHardcopy = 'off';
+trace_fig.InvertHardcopy = 'off';
+saveas(trace_fig,[FigurePath 'coop_trace.png'])
+saveas(trace_fig,[FigurePath 'coop_trace.pdf'])
 
 
 
@@ -187,7 +189,7 @@ rateLim_plot_index = coop_plot_index;%size(bursting_sim_struct(rateLim_sim_index
 % plot results of stochastic simulations
 trace_index = 5;
 
-state_fig = figure;
+trace_fig = figure;
 hold on
 
 % extract raw data
@@ -209,9 +211,9 @@ ax = gca;
 ax.YColor = 'black';
 ax.XColor = 'black';
 StandardFigurePBoC(p,gca);
-state_fig.InvertHardcopy = 'off';
-saveas(state_fig,[FigurePath 'rateLim_trace.png'])
-saveas(state_fig,[FigurePath 'rateLim_trace.pdf'])
+trace_fig.InvertHardcopy = 'off';
+saveas(trace_fig,[FigurePath 'rateLim_trace.png'])
+saveas(trace_fig,[FigurePath 'rateLim_trace.pdf'])
 
 % calculate fraction of time in eac state
 dur_vec = diff([time_raw t_max*60]);
