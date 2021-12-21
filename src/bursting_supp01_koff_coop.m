@@ -158,6 +158,8 @@ saveas(hist_fig,[FigurePath 'coop_hist.pdf'])
 % saveas(hist_fig,[FigurePath 'coop_hist.pdf'])
 
 %% make bar plots of effective on and off rates
+
+
 % define matrices to use for
 n = 0:n_bcd_sites;
 n_states = length(n);
@@ -197,3 +199,13 @@ km_fig.InvertHardcopy = 'off';
 saveas(km_fig,[FigurePath 'km_bars.png'])
 saveas(km_fig,[FigurePath 'km_bars.pdf'])
 
+
+
+%%%%%%%%%%%%%%%%%%%
+sim_param_indices_coop = 176:4:201;
+kon = Q(7,6)
+koff = Q(1,2)
+
+load([DataPath 'bursting_chain_calc_struct.mat'])
+omega_vec = exp(-bursting_chain_calc_struct(coop_sim_index).coopEnergies);
+omega = omega_vec(sim_param_indices_coop(coop_plot_index))

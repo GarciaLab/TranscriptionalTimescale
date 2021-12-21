@@ -62,7 +62,7 @@ choose_2 = n_vec.*(n_vec-1)/2;
 ss_array_coop_matrix = NaN(size(Q_mat_coop,1),size(Q_mat_coop,3));
 ss_array_coop_manuscript = NaN(size(Q_mat_coop,1),size(Q_mat_coop,3));
 
-for i = 1:size(Q_mat_coop,3)
+for i = 197%1:size(Q_mat_coop,3)
   Q = Q_mat_coop(:,:,i)';
   
   % matrix-based approach

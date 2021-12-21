@@ -84,6 +84,7 @@ for eb = 1:length(activatorEnergyVec)
   % independent binding
   state_probs_ind = stateProb_fun(eBind,0);  
   P_ind_array(:,eb) = state_probs_ind;
+  
   % cooperativity
   state_probs_coop = stateProb_fun(eBind,eCoop);    
   P_coop_array(:,eb) = state_probs_coop;
