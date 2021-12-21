@@ -1,6 +1,6 @@
 % script to make figures examine waiting time distributions for 
 % rate-limitiung step and and emergent cooperativity simulations
-clear
+% clear
 close all
 addpath('utilities')
 
@@ -23,6 +23,10 @@ t_max = 60;
 ylimTrace = [-0.5 8];
 n_bound_vec = 0:n_bcd_sites;
 
+% define time grid for resampling
+resamp_res = 0.5; % in seconds
+time_rs = 0:resamp_res:3600;
+
 % sim name cell
 sim_name_cell = {waiting_time_struct.name};
 
@@ -44,22 +48,24 @@ rateLim_sim_index = find(contains(sim_name_cell,'2rate-limiting'));
 %  extract n bound vec
 rateLim_sim_sub_index = 6;%length(waiting_time_struct(rateLim_sim_index).off_waiting_times_ideal);
 % plot results of stochastic simulations
-trace_index = 33;
+trace_index = 1;
+
+
+
+% extract trace data
+trace_raw = double(waiting_time_struct(rateLim_sim_index).sample_traces(trace_index,:,rateLim_sim_sub_index));
+time_raw = waiting_time_struct(rateLim_sim_index).sample_time;
+
+
+% generate hypothetical two state "fit"
+two_state_trace = trace_raw(ismember(trace_raw,[0,6]));
+two_state_times = time_rs(ismember(trace_raw,[0,6]));
 
 state_fig = figure;%('Position',[100 100 1024 512]);
 hold on
 
-% extract trace data
-% time_raw = double(bursting_sim_struct(rateLim_sim_index).sim_time_cell{rateLim_plot_index,trace_index});
-% trace_raw = double(bursting_sim_struct(rateLim_sim_index).sim_emission_cell{rateLim_plot_index,trace_index});
-trace_raw = waiting_time_struct(rateLim_sim_index).trace_array(trace_index,:,rateLim_sim_sub_index)-1;
-
-% extract corresponding viterbi fit
-viterbi_time = waiting_time_struct(rateLim_sim_index).time_vector;
-viterbi_fit = waiting_time_struct(rateLim_sim_index).viterbi_traces(trace_index,:,rateLim_sim_sub_index)*n_bcd_sites;
-
-stairs(viterbi_time/60, trace_raw,'Color',purple,'LineWidth',1);
-stairs(viterbi_time/60, viterbi_fit,'Color','k','LineWidth',1.5);
+stairs(time_rs/60, trace_raw,'Color',purple,'LineWidth',1);
+stairs(two_state_times/60, two_state_trace,'Color','k','LineWidth',1.5);
 
 ylim(ylimTrace)
 xlim([0 t_max])
@@ -74,8 +80,8 @@ ax.YColor = 'black';
 ax.XColor = 'black';
 StandardFigurePBoC(p,gca);
 state_fig.InvertHardcopy = 'off';
-saveas(state_fig,[FigurePath 'rateLim_trace.png'])
-saveas(state_fig,[FigurePath 'rateLim_trace.pdf'])
+% saveas(state_fig,[FigurePath 'rateLim_trace.png'])
+% saveas(state_fig,[FigurePath 'rateLim_trace.pdf'])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% (2) Make figures showing passage times for rate-limiting step mode

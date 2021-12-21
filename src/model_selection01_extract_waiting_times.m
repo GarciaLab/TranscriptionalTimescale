@@ -79,18 +79,31 @@ emergent_indices = 1:2;
 rate_lim_indices = 3:length(bursting_sim_struct);
 sim_indices = [emergent_indices rate_lim_indices];
 
+% resampling parameters
+resamp_res = 0.5; % in seconds
+time_rs = 0:resamp_res:3600;
+
+% set random seed 
+rng(123)
+
 dT = 5; % time res for interpolated data in seconds (effectively our experimental time res)
 n_bound_vec = 0:6;
 n_bs = 6;
+nSamples = 10;
 waiting_time_struct = struct;
 iter = 1;
 
 for s = sim_indices
   
   sub_index_vec = 1:size(bursting_sim_struct(s).SS,2);    
+  
   wt_off_cell_ideal = cell(1,length(sim_indices));
-
-  for i = 1:length(sub_index_vec)    
+  sample_trace_array = NaN(nSamples,length(time_rs),length(sim_indices));
+  sample_time_array = NaN(nSamples,length(time_rs),length(sim_indices));
+  
+  parfor i = 1:length(sub_index_vec)  
+    % select indices of sample traces to extract
+    sample_indices = randsample(1:n_sim,nSamples,false);
     wt_off_vec_ideal = [];
     for n = 1:n_sim    
       
@@ -116,10 +129,17 @@ for s = sim_indices
       end
     end    
     wt_off_cell_ideal{i} = wt_off_vec_ideal;
+    % dwonsample and truncate selected example traces
+    for samp = 1:length(sample_indices)
+      trace_raw = bursting_sim_struct(s).sim_emission_cell{i,sample_indices(samp)};
+      time_raw = bursting_sim_struct(s).sim_time_cell{i,sample_indices(samp)};
+      sample_trace_array(samp,:,i) = interp1(time_raw,trace_raw,time_rs,'previous');
+    end
   end
 
-  % store results in a data structure    
-  waiting_time_struct(iter).trace_array = trace_array; 
+  % store results in a data structure      
+  waiting_time_struct(iter).sample_time = time_rs;
+  waiting_time_struct(iter).sample_traces = sample_trace_array; 
   waiting_time_struct(iter).off_waiting_times_ideal = wt_off_cell_ideal;
   waiting_time_struct(iter).name = bursting_sim_struct(s).name;
   iter = iter + 1;
