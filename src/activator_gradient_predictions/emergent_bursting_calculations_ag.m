@@ -4,7 +4,7 @@
 % emergent_bursting02
 clear
 close all
-addpath('utilities')
+addpath('../utilities')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % define basic hyperparameters and symbols
@@ -13,10 +13,9 @@ addpath('utilities')
 n_bs = 6; % number of Bcd binding sites
 n_states = n_bs + 1; % total number of states
 n_bound_vec = 0:n_bs; % vector encoding # bound in each state
-off_rate_basal = 1/1.264; % in seconds. This sets overall system timescales (from Mir et al, 2018)
-n_calc_points = 201; % number of distinct binding and cooperative energy values to explore
-rate_lim_steps_vec = [1:2 5 10 15]; % numbers of rate-limiting steps to simulate (all in OFF pathway)
-
+off_rate_basal = 0.5; % in seconds. This sets overall system timescales 
+n_calc_points = 201; % number of distinct activator concentrations
+activator_grad_vec = logspace(-log10(10),log10(10),n_calc_points);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % (1) Calculations for simple chain model with and without cooperativity
@@ -32,7 +31,7 @@ rate_lim_steps_vec = [1:2 5 10 15]; % numbers of rate-limiting steps to simulate
 % set save paths
 project = ['n' num2str(n_bs) ]; % project identifier
 
-DataPath = ['../out/emergent_bursting/' project '/'];
+DataPath = ['../../out/activator_gradient/' project '/'];
 mkdir(DataPath)
 
 % accounting for state state multplicities
@@ -50,9 +49,10 @@ end
 mu_vec = -log(mult_vec); % energy contribution from state multiplicities
 
 % specify different binding energies to explore
-ecMax = 2; % ec corresponds to negative log of omega term in text (ec=-log(w))
-coopEnergies = fliplr(linspace(-ecMax,ecMax,n_calc_points)); 
-activatorEnergyVec = -0.5*coopEnergies*(n_bs-1); % this definition ensures symmetric state probabilities (simply for convenience)
+% ecMax = 2; % ec corresponds to negative log of omega term in text (ec=-log(w))
+% 6.6859
+coopEnergies = repelem(-1.5,length(activator_grad_vec));%fliplr(linspace(-ecMax,ecMax,n_calc_points)); 
+activatorEnergyVec = -0.5*coopEnergies*(n_bs-1) - log(activator_grad_vec); 
 
 % define a function to calculate state probabilities for a given binding
 % energy and cooperativity. For simplicity, we consider only simple pairwise 
@@ -74,6 +74,7 @@ Q_coop_on_array = zeros(n_states,n_states,n_calc_points); % on rate-mediated
 
 P_coop_array = NaN(n_states,n_calc_points);
 P_ind_array = NaN(n_states,n_calc_points);
+
 % define matrices used for indexing
 a = ones(n_states); m1 = tril(a,-1); m2 = tril(a,-2); m3 = triu(a,1); m4 = triu(a,2); m5 = ~~eye(n_states);
 
@@ -123,10 +124,10 @@ for eb = 1:length(activatorEnergyVec)
   % this WILL NOT yield average microscopic rate (taken across all events)
   % will be precisely equal to Mir2018 cvalue but it will ensure that 
   % micrsocopic rates out of each state are on a reasonably scale
-  propensity_vec = rate_coop_off_temp(2:end,1)';
+%   propensity_vec = rate_coop_off_temp(2:end,1)';
 %   basal_vec = rate_coop_off_temp(2:end,1)'./n_bound_vec(2:end);
 %   af = off_rate_basal/(sum(state_probs_coop(2:end).*basal_vec)/sum(state_probs_coop(2:end)));
-  rate_coop_off_temp = rate_coop_off_temp;%*af;
+%   rate_coop_off_temp = rate_coop_off_temp*af;
   
   % generator matrix for ind
   c_off_slice = zeros(n_states);
@@ -199,90 +200,76 @@ for i = 1:3
 end
 save([DataPath, 'bursting_chain_calc_struct.mat'],'bursting_chain_calc_struct');
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% (2) generate transition rate matrices for rate-limiting step models
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
 
-% now calculate metrics for (c)
-ind_state_vec = [26 176]; % define the two states to lie near the extrema
+close all
+koff_vec = 1./eff_toff_off_coop_vec;
+kon_vec = 1./eff_ton_off_coop_vec;
 
-% set range of switching kinetics to explore (use kon coop model as ref
-% point)
-slow_kinetics_array = [1./eff_ton_on_coop_vec' 1./eff_toff_on_coop_vec']; 
+k_fig = figure;
+hold on
+plot(activator_grad_vec,60*kon_vec)
+plot(activator_grad_vec,60*koff_vec)
+legend('k_{on}','k_{off}','Location','southeast')
+grid on
+set(gca,'yscale','log')
+set(gca,'xscale','log')
 
-% iterate through different numbers of rate-limiting steps
-bursting_step_calc_struct = struct;
+xlabel('[Activator]')
+ylabel('events per minute')
 
-for n =1:length(rate_lim_steps_vec)
-  
-  % generate transcription rate vec
-  emission_vec = repmat(n_bound_vec,1,rate_lim_steps_vec(n)+1);
-  
-  % initialize array to store rate matrics
-  Q_rate_lim_array = zeros((rate_lim_steps_vec(n)+1)*n_states,(rate_lim_steps_vec(n)+1)*n_states,n_calc_points); % on rate-mediated
-  P_lim_array = NaN(n_states,n_calc_points);
-  P_lim_array_full = NaN((rate_lim_steps_vec(n)+1)*n_states,n_calc_points);
-  % indexing vec for convenience
-  sub_vec = 1:n_states;
+set(gca,'FontSize',14)
+ylim([1e-6 1e1])
 
-  for eb = 1:n_calc_points
-    
-    % extract component rate arrays
-    QON = Q_ind_array(:,:,ind_state_vec(1));
-    QOFF = Q_ind_array(:,:,ind_state_vec(2));
-    
-    % estimate expected effective occupancies (assuming strong timescale
-    % separation)
-    SSON = P_ind_array(:,ind_state_vec(1));
-    SSOFF = P_ind_array(:,ind_state_vec(2));
-    
-    % effective ss
-    pon = slow_kinetics_array(eb,1)/(slow_kinetics_array(eb,2)+slow_kinetics_array(eb,1));
-    P_lim_array(:,eb) = SSON*pon + SSOFF*(1-pon);
-    
-    % full ss (same dims as Q)
-    P_lim_array_full(:,eb) = [repmat(SSOFF/rate_lim_steps_vec(n)*(1-pon),rate_lim_steps_vec(n),1) ; SSON*pon];
-    
-    % initialize combined rate array
-    Q_slice = Q_rate_lim_array(:,:,eb);
-    
-    % add "OFF" blocks
-    for m = 1:rate_lim_steps_vec(n)
-      % fill in binding rate block
-      Q_slice(sub_vec+(m-1)*n_states,sub_vec+(m-1)*n_states) = QOFF';
-      
-      % calculate indices for slow exchange terms
-      linear_indices = sub2ind(size(Q_slice),sub_vec+m*n_states,sub_vec+(m-1)*n_states);
-      
-      % add exchange terms
-      Q_slice(linear_indices) = slow_kinetics_array(eb,1)*rate_lim_steps_vec(n); % on rate
-            
-    end
-    % add "ON" block
-    Q_slice(sub_vec+rate_lim_steps_vec(n)*n_states,sub_vec+rate_lim_steps_vec(n)*n_states) = QON';
-    linear_indices = sub2ind(size(Q_slice),sub_vec,sub_vec+rate_lim_steps_vec(n)*n_states);
-    Q_slice(linear_indices) = slow_kinetics_array(eb,2);
-    
-    % enforce proper form
-    Q_slice(eye(size(Q_slice))==1) = 0;
-    Q_slice(eye(size(Q_slice))==1) = -sum(Q_slice);
-    Q_rate_lim_array(:,:,eb) = Q_slice';   
-  end
-  
-  % record
-  bursting_step_calc_struct(n).name = [num2str(rate_lim_steps_vec(n)) 'rate-limiting steps'];
-  bursting_step_calc_struct(n).Q = Q_rate_lim_array; 
-  bursting_step_calc_struct(n).SS = P_lim_array; 
-  bursting_step_calc_struct(n).SSFull =P_lim_array_full;
-  bursting_step_calc_struct(n).edge = P_lim_array(1,:)+P_lim_array(end,:); 
-  bursting_step_calc_struct(n).eff_on_states = calc_vec;
-  bursting_step_calc_struct(n).eff_rates = [1./eff_ton_off_coop_vec' 1./eff_toff_off_coop_vec'];
-  bursting_step_calc_struct(n).E = emission_vec;
-  bursting_step_calc_struct(n).off_rate_basal = off_rate_basal;
-  bursting_step_calc_struct(n).on_rate_basal_vec = on_rate_basal_vec;
-  bursting_step_calc_struct(n).activatorEnergies = activatorEnergyVec;
-  bursting_step_calc_struct(n).coopEnergies = coopEnergies;
-  bursting_step_calc_struct(n).ind_state_vec = ind_state_vec;
-end
+saveas(k_fig,'kon_koff_vs_activator.png')
+saveas(k_fig,'kon_koff_vs_activator.pdf')
 
-save([DataPath, 'bursting_step_calc_struct.mat'],'bursting_step_calc_struct');
+r_fig = figure;
+hold on
+plot(activator_grad_vec,sum((0:6)' .* P_coop_array))
+% legend('k_{on}','k_{off}','Location','southeast')
+grid on
+set(gca,'xscale','log')
+xlabel('[Activator]')
+ylabel('mean transcription rate')
+
+set(gca,'FontSize',14)
+
+saveas(r_fig,'mean rate_vs_activator_unbinding_coop.png')
+saveas(r_fig,'mean_rate_vs_activator_unbinding_coop.pdf')
+
+%%
+koff_vec = 1./eff_toff_on_coop_vec;
+kon_vec = 1./eff_ton_on_coop_vec;
+
+k_fig = figure;
+hold on
+plot(activator_grad_vec,60*kon_vec)
+plot(activator_grad_vec,60*koff_vec)
+legend('k_{on}','k_{off}','Location','southeast')
+grid on
+set(gca,'yscale','log')
+set(gca,'xscale','log')
+
+xlabel('[Activator]')
+ylabel('events per minute')
+
+set(gca,'FontSize',14)
+ylim([1e-5 1e2])
+
+saveas(k_fig,'kon_koff_vs_activator_binding_coop.png')
+saveas(k_fig,'kon_koff_vs_activator_binding_coop.pdf')
+
+r_fig = figure;
+hold on
+plot(activator_grad_vec,sum((0:6)' .* P_coop_array))
+% legend('k_{on}','k_{off}','Location','southeast')
+grid on
+set(gca,'xscale','log')
+xlabel('[Activator]')
+ylabel('mean transcription rate')
+
+set(gca,'FontSize',14)
+
+saveas(r_fig,'mean rate_vs_activator_binding_coop.png')
+saveas(r_fig,'mean_rate_vs_activator_binding_coop.pdf')
